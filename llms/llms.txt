@@ -1,0 +1,42 @@
+# @about-me/fp
+
+TypeScript 函数式编程工具库
+
+## 导入
+
+```typescript
+import { pipe, curry, debounce } from '@about-me/fp'
+```
+
+## API 参考
+
+### 组合函数
+
+- [pipe](https://github.com/llong8/fp/blob/main/docs/pipe.md): 从左到右组合函数
+- [pipeAsync](https://github.com/llong8/fp/blob/main/docs/pipeAsync.md): pipe 的异步版本，支持 Promise
+- [compose](https://github.com/llong8/fp/blob/main/docs/compose.md): 从右到左组合函数
+
+### 函数转换
+
+- [curry](https://github.com/llong8/fp/blob/main/docs/curry.md): 将多参数函数转换为单参数函数序列
+- [partial](https://github.com/llong8/fp/blob/main/docs/partial.md): 固定函数的部分参数
+
+### 调试
+
+- [tap](https://github.com/llong8/fp/blob/main/docs/tap.md): 执行副作用但不改变值
+
+### 工具函数
+
+- [identity](https://github.com/llong8/fp/blob/main/docs/identity.md): 返回输入值本身
+- [constant](https://github.com/llong8/fp/blob/main/docs/constant.md): 创建返回常量的函数
+
+### 性能优化
+
+- [memoize](https://github.com/llong8/fp/blob/main/docs/memoize.md): 缓存函数结果避免重复计算
+- [debounce](https://github.com/llong8/fp/blob/main/docs/debounce.md): 延迟执行函数直到停止调用
+- [throttle](https://github.com/llong8/fp/blob/main/docs/throttle.md): 限制函数执行频率
+
+## 完整文档
+
+- [llms-full.txt](https://github.com/llong8/fp/blob/main/llms/llms-full.txt): 包含所有函数的详细说明、使用示例和最佳实践
+- [docs/](https://github.com/llong8/fp/tree/main/docs): 每个函数的独立详细文档
