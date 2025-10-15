@@ -1,0 +1,58 @@
+{
+  "name": "@about-me/fp",
+  "version": "1.0.0",
+  "description": "函数式编程工具集",
+  "main": "dist/index.js",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "type": "module",
+  "scripts": {
+    "build": "tsc --declaration false && tsup",
+    "build:watch": "tsc --declaration false --watch",
+    "clean": "rm -rf dist",
+    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "test:coverage": "vitest --coverage",
+    "test:run": "vitest run",
+    "type-check": "tsc --noEmit",
+    "prepublishOnly": "pnpm run clean && pnpm run test:run && pnpm run build"
+  },
+  "keywords": [
+    "fp",
+    "fp-ts",
+    "functional-programming",
+    "typescript",
+    "functional-utilities",
+    "functional-composition"
+  ],
+  "author": "llong8",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/llong8/fp"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "devDependencies": {
+    "@types/node": "^24.7.2",
+    "@vitest/ui": "^2.0.0",
+    "tsup": "^8.5.0",
+    "typescript": "^5.3.3",
+    "vitest": "^2.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
