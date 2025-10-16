@@ -176,7 +176,8 @@ describe('tap', () => {
       const result = await tapped(promiseValue)
 
       expect(logs).toEqual(['hello'])
-      expect(result).toBe(promiseValue) // 返回原始 Promise
+      // tap 处理 Promise 后返回新的 Promise，解析后得到原始值
+      expect(result).toBe('hello')
     })
 
     it('应该在 pipe 链中正确处理 Promise 解包', async () => {
@@ -254,11 +255,12 @@ describe('tap', () => {
       const result2 = await asyncTap(promiseValue)
 
       expect(logs).toEqual(['sync: test', 'async: test'])
-      expect(result1).toBe(promiseValue)
-      expect(result2).toBe(promiseValue)
+      // tap 处理后返回解析后的值
+      expect(result1).toBe('test')
+      expect(result2).toBe('test')
     })
 
-    it('应该保持原始 Promise 引用', async () => {
+    it('应该返回解包后的值', async () => {
       const originalPromise = Promise.resolve({ data: 'test' })
 
       const tapped = tap((value: { data: string }) => {
@@ -267,8 +269,8 @@ describe('tap', () => {
 
       const result = await tapped(originalPromise)
 
-      // 应该返回原始 Promise，而不是新的 Promise
-      expect(result).toBe(originalPromise)
+      // tap 处理 Promise 后，返回解包后的值
+      expect(result).toEqual({ data: 'test' })
     })
 
     it('应该处理嵌套的 Promise', async () => {
@@ -283,7 +285,8 @@ describe('tap', () => {
       const result = await tapped(nestedPromise)
 
       expect(logs).toEqual([42])
-      expect(result).toBe(nestedPromise)
+      // tap 处理后返回解包后的值
+      expect(result).toBe(42)
     })
   })
 })
