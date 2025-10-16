@@ -73,8 +73,7 @@ input.addEventListener('input', e => searchAPI(e.target.value))
 
 | 函数 | 描述 | 使用场景 |
 |------|------|---------|
-| **[pipe](https://github.com/llong8/fp/blob/main/docs/pipe.md)** | 从左到右组合函数 | 数据转换管道、流程编排 |
-| **[pipeAsync](https://github.com/llong8/fp/blob/main/docs/pipeAsync.md)** | 异步版本的 pipe | API 调用、异步流程 |
+| **[pipe](https://github.com/llong8/fp/blob/main/docs/pipe.md)** | 从左到右组合函数，支持同步和异步 | 数据转换管道、流程编排、异步操作 |
 | **[compose](https://github.com/llong8/fp/blob/main/docs/compose.md)** | 从右到左组合函数 | 数学风格组合、高阶函数 |
 
 ### 函数转换
@@ -84,11 +83,11 @@ input.addEventListener('input', e => searchAPI(e.target.value))
 | **[curry](https://github.com/llong8/fp/blob/main/docs/curry.md)** | 柯里化 | 创建专用函数、参数复用 |
 | **[partial](https://github.com/llong8/fp/blob/main/docs/partial.md)** | 部分应用 | 固定部分参数 |
 
-### 调试工具
+### 副作用和调试
 
 | 函数 | 描述 | 使用场景 |
 |------|------|---------|
-| **[tap](https://github.com/llong8/fp/blob/main/docs/tap.md)** | 执行副作用但不改变值 | 调试、日志、监控 |
+| **[tap](https://github.com/llong8/fp/blob/main/docs/tap.md)** | 执行副作用但不改变值，支持同步和异步 | 调试、日志、监控、异步日志 |
 
 ### 基础工具
 
