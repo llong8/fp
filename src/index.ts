@@ -9,7 +9,6 @@
 
 // 核心组合函数
 export { pipe } from './pipe'
-export { pipeAsync } from './pipeAsync'
 export { compose } from './compose'
 
 // 函数转换
