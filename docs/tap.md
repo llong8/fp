@@ -1,33 +1,37 @@
 # tap
 
-**执行副作用** - 在数据流中执行操作但不改变值，支持同步和异步
+**执行副作用** - 在数据流中执行操作但不改变值，支持同步和异步，自动解包 Promise
 
 ## 函数签名
 
 ```typescript
-// 同步版本
-function tap<T>(fn: (value: T) => void): (value: T) => T
+// 辅助类型：提取 Promise 中的类型
+type UnwrapPromise<T> = T extends Promise<infer U> ? U : T
 
-// 异步版本
-function tap<T>(fn: (value: T) => Promise<void>): (value: T) => Promise<T>
+// 统一签名 - 副作用函数接收解包后的类型
+function tap<T>(fn: (value: UnwrapPromise<T>) => void | Promise<void>): (value: T) => T
 ```
 
 ## 描述
 
 `tap` 函数接受一个副作用函数，返回一个新函数。这个新函数会执行副作用（如日志、调试、监控），但总是返回原始值不变。这使得 `tap` 非常适合在 `pipe` 或 `compose` 中添加调试和日志，而不影响数据流。
 
-支持同步和异步副作用函数，当传入异步函数时自动返回 Promise。
+### 核心特性
+- **自动 Promise 解包**: 如果输入值是 Promise，tap 会自动解包后传递给副作用函数
+- **类型推断优化**: 使用 `UnwrapPromise<T>` 确保 TypeScript 正确推断类型
+- **同步/异步自适应**: 根据输入值和副作用函数自动处理同步或异步流程
+- **保持原值不变**: 无论副作用函数如何执行，始终返回原始输入值
 
 ## 参数
 
 | 参数 | 类型 | 描述 |
 |------|------|------|
-| `fn` | `(value: T) => void \| Promise<void>` | 要执行的副作用函数（同步或异步），接收当前值但不返回任何内容 |
+| `fn` | `(value: UnwrapPromise<T>) => void \| Promise<void>` | 要执行的副作用函数，接收解包后的值（非 Promise） |
 
 ## 返回值
 
-- **类型**: `(value: T) => T \| Promise<T>`
-- **描述**: 返回一个函数，执行副作用后返回原始值不变（异步时返回 Promise）
+- **类型**: `(value: T) => T`
+- **描述**: 返回一个函数，执行副作用后返回原始值不变。如果输入或副作用是异步的，运行时会返回 Promise
 
 ## 基础示例
 
@@ -182,31 +186,59 @@ const validateAndLog = pipe(
 )
 ```
 
-### 应用 5: 异步操作中的日志
+### 应用 5: 异步操作中的自动 Promise 解包
 
 ```typescript
 import { pipe, tap } from '@about-me/fp'
 
+// 模拟 API 调用
 const fetchUser = async (userId: number) => {
   await new Promise(resolve => setTimeout(resolve, 100))
   return { id: userId, name: 'Alice', email: 'alice@example.com' }
 }
 
-const processAPIData = async (userId: number) => {
+const enrichUser = async (user: { id: number; name: string }) => {
+  return { ...user, role: 'admin', verified: true }
+}
+
+// 展示 tap 自动解包 Promise 的能力
+const processUserData = async (userId: number) => {
   return await pipe(
     userId,
-    tap(id => console.log('获取用户:', id)),
-    fetchUser,
-    tap(async user => {
-      await saveLog('收到用户', user)
-      console.log('收到用户:', user)
+    tap(id => console.log('开始处理用户 ID:', id)),  // id 是 number
+
+    fetchUser,  // 返回 Promise<User>
+
+    // 🎯 关键点：user 自动解包为 User 类型，而非 Promise<User>
+    tap(user => {
+      console.log('获取到用户:', user.name)  // ✅ TypeScript 正确推断
+      console.log('邮箱:', user.email)        // ✅ 可以访问属性
     }),
-    user => ({ ...user, processed: true }),
-    tap(user => console.log('处理后的用户:', user))
+
+    enrichUser,  // 返回 Promise<EnrichedUser>
+
+    // 🎯 再次自动解包：enrichedUser 是 EnrichedUser 类型
+    tap(enrichedUser => {
+      console.log('角色:', enrichedUser.role)      // ✅ 正确推断
+      console.log('已验证:', enrichedUser.verified) // ✅ 可以访问新属性
+    }),
+
+    // 可以混合同步和异步的 tap
+    tap(async user => {
+      await saveToDatabase(user)  // 异步副作用
+      console.log('已保存到数据库')
+    }),
+
+    user => ({ ...user, timestamp: Date.now() })
   )
 }
 
-processAPIData(123)
+// 对比传统写法（没有自动解包时的问题）
+// ❌ 旧版本会出现类型错误：
+// tap(async (userPromise) => {
+//   // userPromise 是 Promise<User>，不能直接访问 .name
+//   console.log(userPromise.name) // 类型错误！
+// })
 ```
 
 ### 应用 6: 进度跟踪

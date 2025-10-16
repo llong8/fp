@@ -264,26 +264,28 @@ postRequest('/api/users', { name: 'Alice' })
 
 ---
 
-### 6. tap - 执行副作用
+### 6. tap - 执行副作用（支持自动 Promise 解包）
 
 **签名**：
 ```typescript
-// 同步版本
-tap<T>(fn: (value: T) => void): (value: T) => T
+// 辅助类型：提取 Promise 中的类型
+type UnwrapPromise<T> = T extends Promise<infer U> ? U : T
 
-// 异步版本
-tap<T>(fn: (value: T) => Promise<void>): (value: T) => Promise<T>
+// 统一签名 - 副作用函数接收解包后的类型
+tap<T>(fn: (value: UnwrapPromise<T>) => void | Promise<void>): (value: T) => T
 ```
 
 **用途**：在数据流中执行副作用（如日志、调试），但不改变数据
 
 **特性**：
+- 🎯 **自动 Promise 解包**：如果输入是 Promise，自动解包后传递给副作用函数
 - 支持同步和异步副作用函数
-- 自动检测 Promise 并返回相应类型
+- TypeScript 类型推断优化（使用 `UnwrapPromise<T>`）
+- 保持原值不变，始终返回输入值
 
 **使用场景**：
-- 调试 pipe 链
-- 日志记录
+- 调试 pipe 链中的异步操作
+- 日志记录（支持 Promise 自动解包）
 - 监控数据流
 - 异步日志（如数据库记录）
 
@@ -299,11 +301,34 @@ const result = pipe(
   tap(x => console.log('After filter:', x)),
   arr => arr.reduce((sum, x) => sum + x, 0)
 )
-// 控制台输出：
-// Original: [1, 2, 3, 4, 5]
-// After double: [2, 4, 6, 8, 10]
-// After filter: [6, 8, 10]
-// 结果: 24
+
+// 🎯 关键特性：自动 Promise 解包
+const processUser = await pipe(
+  userId,
+  tap(id => console.log('User ID:', id)),        // id: number
+
+  async id => await fetchUser(id),                // 返回 Promise<User>
+
+  // ✅ user 自动解包为 User 类型，而非 Promise<User>
+  tap(user => {
+    console.log('Name:', user.name)               // 可以直接访问属性
+    console.log('Email:', user.email)             // TypeScript 正确推断
+  }),
+
+  async user => await enrichUser(user),           // 返回 Promise<EnrichedUser>
+
+  // ✅ 再次自动解包
+  tap(enrichedUser => {
+    console.log('Role:', enrichedUser.role)       // 正确推断新属性
+    console.log('Verified:', enrichedUser.verified)
+  }),
+
+  // 混合同步和异步 tap
+  tap(async user => {
+    await saveToDatabase(user)
+    console.log('Saved to database')
+  })
+)
 
 // 性能监控
 const processData = pipe(
@@ -314,18 +339,6 @@ const processData = pipe(
   tap(() => console.time('transformation')),
   transformData,
   tap(() => console.timeEnd('transformation'))
-)
-
-// 异步日志（自动检测）
-const result = await pipe(
-  userId,
-  tap(id => console.log('Fetching user:', id)),
-  async id => await fetchUser(id),
-  tap(async user => {
-    await saveLog('User fetched', user)
-    console.log('User:', user.name)
-  }),
-  user => user.email
 )
 ```
 

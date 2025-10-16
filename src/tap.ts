@@ -1,51 +1,56 @@
 /**
- * tap - 执行副作用而不改变值（统一版本，支持同步和异步）
+ * tap - 执行副作用而不改变值（支持同步和异步）
  *
  * 在 pipe 链或任何转换管道中用于调试、日志记录等副作用操作。
- * 执行一个函数产生副作用，然后返回原始值。
+ * 执行副作用函数后返回原始值不变。
  *
- * 自动检测副作用函数是否返回 Promise，自动切换同步/异步模式。
+ * 特性：
+ * - 自动检测并处理 Promise 值
+ * - 副作用函数接收解包后的值（非 Promise）
+ * - 支持同步和异步副作用函数
+ * - 运行时根据情况返回 T 或 Promise<T>
  *
- * @template T - 值的类型
- * @param fn - 要执行副作用的函数（可以是同步或异步）
- * @returns 返回一个函数，接收值、执行 fn、返回不变的值
+ * @template T - 值的类型（可以是 Promise<U> 或普通值）
+ * @param fn - 副作用函数，接收解包后的值
+ * @returns 返回函数，保持原始值不变
  *
  * @example
  * // 同步使用
  * const result = pipe(
- *   value,
- *   transform1,
- *   tap(x => console.log('After transform1:', x)),
- *   transform2
- * )
+ *   5,
+ *   tap(x => console.log('Value:', x)),
+ *   x => x * 2
+ * ) // 输出: Value: 5, 返回: 10
  *
  * @example
- * // 异步使用
+ * // 异步使用 - tap 自动解包 Promise
  * const result = await pipe(
- *   value,
- *   transform1,
- *   tap(async x => await logToDatabase(x)),
- *   transform2
+ *   getData(),  // 返回 Promise<Data>
+ *   async data => processData(data),  // 返回 Promise<Result>
+ *   tap(result => console.log(result)),  // result 已自动解包为 Result 类型
+ *   tap(async result => await saveToDb(result))  // 支持异步副作用
  * )
  */
 
-// 同步重载
-export function tap<T>(fn: (value: T) => void): (value: T) => T
+// 辅助类型：提取 Promise 中的类型
+type UnwrapPromise<T> = T extends Promise<infer U> ? U : T
 
-// 异步重载
-export function tap<T>(fn: (value: T) => Promise<void>): (value: T) => Promise<T>
+// 类型声明 - 副作用函数接收解包后的类型
+export function tap<T>(fn: (value: UnwrapPromise<T>) => void | Promise<void>): (value: T) => T
 
 // 实现
-export function tap<T>(fn: (value: T) => void | Promise<void>) {
-  return (value: T): T | Promise<T> => {
-    const result = fn(value)
-
-    // 如果副作用函数返回 Promise，返回异步版本
-    if (result instanceof Promise) {
-      return result.then(() => value)
+export function tap<T>(fn: (value: UnwrapPromise<T>) => void | Promise<void>): (value: T) => T {
+  return ((value: T) => {
+    // Promise 值需要先解包
+    if (value instanceof Promise) {
+      return value.then((unwrapped: any) => {
+        const result = fn(unwrapped)
+        return result instanceof Promise ? result.then(() => value) : value
+      })
     }
 
-    // 否则返回同步版本
-    return value
-  }
+    // 同步值直接处理
+    const result = fn(value as any)
+    return result instanceof Promise ? result.then(() => value) : value
+  }) as (value: T) => T
 }
