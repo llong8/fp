@@ -12,8 +12,7 @@ import { pipe, curry, debounce } from '@about-me/fp'
 
 ### 组合函数
 
-- [pipe](https://github.com/llong8/fp/blob/main/docs/pipe.md): 从左到右组合函数
-- [pipeAsync](https://github.com/llong8/fp/blob/main/docs/pipeAsync.md): pipe 的异步版本，支持 Promise
+- [pipe](https://github.com/llong8/fp/blob/main/docs/pipe.md): 从左到右组合函数，支持同步和异步
 - [compose](https://github.com/llong8/fp/blob/main/docs/compose.md): 从右到左组合函数
 
 ### 函数转换
@@ -21,9 +20,9 @@ import { pipe, curry, debounce } from '@about-me/fp'
 - [curry](https://github.com/llong8/fp/blob/main/docs/curry.md): 将多参数函数转换为单参数函数序列
 - [partial](https://github.com/llong8/fp/blob/main/docs/partial.md): 固定函数的部分参数
 
-### 调试
+### 副作用和调试
 
-- [tap](https://github.com/llong8/fp/blob/main/docs/tap.md): 执行副作用但不改变值
+- [tap](https://github.com/llong8/fp/blob/main/docs/tap.md): 执行副作用但不改变值，支持同步和异步
 
 ### 工具函数
 
