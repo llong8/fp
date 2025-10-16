@@ -1,6 +1,6 @@
 # pipe
 
-**从左到右组合函数** - 最直观的数据流方式
+**从左到右组合函数** - 直观的数据流方式，支持同步和异步
 
 ## 函数签名
 
@@ -11,6 +11,8 @@ function pipe<T>(value: T, ...fns: Array<(arg: any) => any>): any
 ## 描述
 
 `pipe` 函数将一个初始值依次传递给一系列函数，每个函数的输出作为下一个函数的输入。执行顺序是**从左到右**，这是最符合人类阅读习惯的数据流方式。
+
+支持同步和异步函数混用，当遇到 Promise 时自动切换到异步模式。
 
 ## 参数
 
@@ -57,6 +59,44 @@ const result = pipe(
 )
 
 console.log(result) // "HELLO-WORLD"
+```
+
+### 示例 3: 异步操作
+
+```typescript
+import { pipe } from '@about-me/fp'
+
+const fetchUser = async (id: number) => {
+  const response = await fetch(`/api/users/${id}`)
+  return response.json()
+}
+
+const result = await pipe(
+  123,
+  fetchUser,                        // async: 获取用户数据
+  user => user.name,                 // sync: 提取名字
+  name => name.toUpperCase(),        // sync: 转大写
+  async name => {                    // async: 保存到数据库
+    await saveToDatabase(name)
+    return name
+  }
+)
+
+console.log(result) // "ALICE"
+```
+
+### 示例 4: Promise 输入
+
+```typescript
+const userPromise = Promise.resolve({ name: 'Alice', age: 25 })
+
+const result = await pipe(
+  userPromise,                       // Promise 输入
+  user => user.name,                 // sync: 提取名字
+  name => name.toUpperCase()         // sync: 转大写
+)
+
+console.log(result) // "ALICE"
 ```
 
 ## 实际应用
