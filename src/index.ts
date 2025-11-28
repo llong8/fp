@@ -26,3 +26,8 @@ export { constant } from './constant'
 export { memoize } from './memoize'
 export { debounce } from './debounce'
 export { throttle } from './throttle'
+
+// 异步工具
+export { retry } from './retry'
+
+

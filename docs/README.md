@@ -29,4 +29,8 @@
 - [debounce](./debounce.md) - 防抖，延迟执行
 - [throttle](./throttle.md) - 节流，限制执行频率
 
+### 异步工具
+
+- [retry](./retry.md) - 重试，支持指数退避和抖动策略
+
 
