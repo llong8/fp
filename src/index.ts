@@ -29,5 +29,6 @@ export { throttle } from './throttle'
 
 // 异步工具
 export { retry } from './retry'
+export { react, type ReactConfig, type ReactResult, type ObserveResult, ReactError } from './react'
 
 
