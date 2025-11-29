@@ -5,32 +5,34 @@
 ## 函数签名
 
 ```typescript
-function retry<T>(
-  fn: () => Promise<T>,
+function retry<T, TError = Error>(
+  fn: (feedback?: string) => Promise<T>,
   config: {
     maxRetries: number
     baseDelay: number
     maxDelay: number
-    shouldRetry?: (error: Error, attempt: number) => boolean
-    onRetry?: (error: Error, attempt: number, delay: number) => void
+    shouldRetry?: (error: TError, attempt: number) => boolean
+    transformError?: (error: TError, attempt: number) => string | undefined
+    onRetry?: (error: TError, attempt: number, delay: number, feedback?: string) => void
   }
 ): Promise<T>
 ```
 
 ## 描述
 
-`retry` 函数为异步操作提供重试能力。当异步函数失败时，会按照指数退避策略等待后重试，并加入随机抖动避免"惊群效应"。这是 AWS 推荐的重试策略。
+`retry` 函数为异步操作提供重试能力。当异步函数失败时，会按照指数退避策略等待后重试，并加入随机抖动避免"惊群效应"。这是 AWS 推荐的重试策略。支持错误反馈机制，可以将错误信息转换为反馈并传递给下次调用。
 
 ## 参数
 
 | 参数 | 类型 | 描述 |
 |------|------|------|
-| `fn` | `() => Promise<T>` | 要重试的异步函数 |
+| `fn` | `(feedback?: string) => Promise<T>` | 要重试的异步函数，可接收错误反馈参数 |
 | `config.maxRetries` | `number` | 最大重试次数（不包含首次尝试） |
 | `config.baseDelay` | `number` | 基础延迟（毫秒） |
 | `config.maxDelay` | `number` | 最大延迟（毫秒） |
-| `config.shouldRetry` | `(error: Error, attempt: number) => boolean` | 可选，判断是否应该重试 |
-| `config.onRetry` | `(error: Error, attempt: number, delay: number) => void` | 可选，重试前的回调 |
+| `config.shouldRetry` | `(error: TError, attempt: number) => boolean` | 可选，判断是否应该重试 |
+| `config.transformError` | `(error: TError, attempt: number) => string \| undefined` | 可选，将错误转换为反馈消息 |
+| `config.onRetry` | `(error: TError, attempt: number, delay: number, feedback?: string) => void` | 可选，重试前的回调 |
 
 ## 返回值
 
@@ -179,6 +181,63 @@ const uploadWithRetry = async (file: File) => {
       maxRetries: 3,
       baseDelay: 1000,
       maxDelay: 15000,
+    }
+  )
+}
+```
+
+### 应用 5: LLM 输出格式纠正
+
+```typescript
+import { retry } from '@about-me/fp'
+
+// 提取 Zod 验证错误
+const buildParseErrorFeedback = (error: any): string | undefined => {
+  if (error.lc_error_code !== 'OUTPUT_PARSING_FAILURE') {
+    return undefined  // 不是格式错误，不提供反馈
+  }
+
+  const llmOutput = error.llmOutput || '未知输出'
+  const zodErrors = error.error?.issues
+    ?.map((issue: any) => `字段 "${issue.path.join('.')}"：${issue.message}`)
+    .join('\n') || '未知错误'
+
+  return `上次输出格式错误
+
+你返回的 JSON:
+\`\`\`json
+${llmOutput}
+\`\`\`
+
+验证错误:
+${zodErrors}
+
+请严格按照 schema 定义返回。`
+}
+
+// 带格式纠正的 LLM 调用
+const callLLMWithSchema = async (prompt: string, schema: any) => {
+  return retry(
+    (errorFeedback?: string) => {
+      // 如果有错误反馈，追加到 prompt
+      const fullPrompt = errorFeedback
+        ? `${prompt}\n\n${errorFeedback}`
+        : prompt
+
+      return llm.withStructuredOutput(schema).invoke(fullPrompt)
+    },
+    {
+      maxRetries: 3,
+      baseDelay: 2000,
+      maxDelay: 30000,
+      transformError: buildParseErrorFeedback,  // 提取格式错误
+      onRetry: (error, attempt, delay, feedback) => {
+        const reason = feedback ? '格式错误' : error.message
+        console.log(`LLM 调用失败 (${reason})，重试 ${attempt}/3`)
+        if (feedback) {
+          console.log('反馈给 LLM:', feedback)
+        }
+      },
     }
   )
 }
